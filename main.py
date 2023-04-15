@@ -9,6 +9,10 @@ class Item(BaseModel):
     url: str
 
 
+class ItemList(BaseModel):
+    urls: list[str]
+
+
 # model predicts one of the 1000 ImageNet classes
 def predict_of_cat(url: str) -> str:
     image = Image.open(requests.get(url, stream=True).raw)
@@ -19,6 +23,19 @@ def predict_of_cat(url: str) -> str:
     predicted_class_idx = logits.argmax(-1).item()
 
     return model.config.id2label[predicted_class_idx]
+
+
+def predict_of_cat_list_or_str(urls: list):
+    if len(urls) > 1:
+        predicts_list: list[str] = []
+
+        for url in urls:
+            predicts_list.append(predict_of_cat(url))
+
+        return predicts_list
+
+    else:
+        return predict_of_cat(urls[0])
 
 
 app = FastAPI()
@@ -42,3 +59,8 @@ def demo():
 @app.post("/predict/")
 def predict(item: Item):
     return predict_of_cat(item.url)
+
+
+@app.post("/predict-list/")
+def predict_list(item: ItemList):
+    return predict_of_cat_list_or_str(item.urls)
